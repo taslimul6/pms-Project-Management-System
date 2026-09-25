@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 
 const initialValues = {
@@ -26,8 +24,7 @@ const categories = [
 const inputClass =
   "w-full px-3 py-2 sm:py-2.5 text-xs bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-400/20 transition-all";
 
-const labelClass =
-  "block text-xs font-medium text-zinc-300 mb-1";
+const labelClass = "block text-xs font-medium text-zinc-300 mb-1";
 
 const ErrorMessage = ({ id, message }) => {
   if (!message) return null;
@@ -36,32 +33,33 @@ const ErrorMessage = ({ id, message }) => {
     <p
       id={id}
       role="alert"
-      className="text-[11px] text-rose-400 mt-1 flex items-center gap-1"
+      className="text-[11px] text-rose-400 mt-1"
     >
-      <svg
-        className="w-3.5 h-3.5 shrink-0"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-
-      <span>{message}</span>
+      {message}
     </p>
   );
 };
 
-const Form = ({ onAddProject } = {}) => {
-  const [values, setValues] = useState({ ...initialValues });
+const Form = ({
+  editingProject,
+  onAddProject,
+  onUpdateProject,
+  onCancelEdit,
+}) => {
+  const isEditing = Boolean(editingProject);
+
+  const [values, setValues] = useState(() => ({
+    ...initialValues,
+    ...(editingProject || {}),
+  }));
+
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+
+  const hasExistingCategory =
+    editingProject?.category &&
+    !categories.some((item) => item.value === editingProject.category);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -109,14 +107,19 @@ const Form = ({ onAddProject } = {}) => {
       const url = new URL(projectUrl);
 
       if (!["http:", "https:"].includes(url.protocol)) {
-        newErrors.projectUrl =
-          "Please enter an HTTP or HTTPS URL.";
+        newErrors.projectUrl = "Please enter an HTTP or HTTPS URL.";
       }
     } catch {
       newErrors.projectUrl = "Please enter a valid URL.";
     }
 
-    if (!categories.some((item) => item.value === values.category)) {
+    const validCategory =
+      categories.some((item) => item.value === values.category) ||
+      (isEditing &&
+        values.category &&
+        values.category === editingProject.category);
+
+    if (!validCategory) {
       newErrors.category = "Please select a category.";
     }
 
@@ -130,10 +133,7 @@ const Form = ({ onAddProject } = {}) => {
 
     if (!Number.isSafeInteger(qty) || qty < 1) {
       newErrors.submit = "Quantity must be a positive whole number.";
-    } else if (
-      !newErrors.budget &&
-      !Number.isFinite(totalBudget)
-    ) {
+    } else if (!newErrors.budget && !Number.isFinite(totalBudget)) {
       newErrors.budget = "Total budget is too large.";
     }
 
@@ -144,9 +144,8 @@ const Form = ({ onAddProject } = {}) => {
     setIsSubmitting(true);
 
     try {
-      const newProject = {
+      const projectData = {
         ...values,
-        id: crypto.randomUUID(),
         projectName,
         clientName,
         projectUrl,
@@ -155,16 +154,18 @@ const Form = ({ onAddProject } = {}) => {
         totalBudget,
       };
 
-      if (onAddProject) {
-        await onAddProject(newProject);
+      if (isEditing) {
+        await onUpdateProject({
+          ...projectData,
+          id: editingProject.id,
+        });
       } else {
-        console.log("New project:", newProject);
+        await onAddProject(projectData);
+        clearForm();
       }
-
-      clearForm();
     } catch {
       setErrors({
-        submit: "Could not add the project. Please try again.",
+        submit: "Could not save the project. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -178,13 +179,17 @@ const Form = ({ onAddProject } = {}) => {
         <div className="flex items-center justify-between pb-4 border-b border-zinc-800/80 mb-5">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500" />
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isEditing ? "bg-amber-400" : "bg-blue-500"
+                }`}
+              />
 
               <h3
                 id="formTitle"
                 className="text-sm sm:text-base font-bold text-white uppercase tracking-tight"
               >
-                Create Project
+                {isEditing ? "Edit Project" : "Create Project"}
               </h3>
             </div>
 
@@ -192,16 +197,23 @@ const Form = ({ onAddProject } = {}) => {
               id="formSubtitle"
               className="text-xs text-zinc-400 mt-0.5"
             >
-              Enter details to add a new project
+              {isEditing
+                ? "Update the selected project details"
+                : "Enter details to add a new project"}
             </p>
           </div>
 
-          <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700">
-            New Entry
+          <span
+            className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
+              isEditing
+                ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                : "bg-zinc-800 text-zinc-300 border-zinc-700"
+            }`}
+          >
+            {isEditing ? "Editing" : "New Entry"}
           </span>
         </div>
 
-        {/* Form Fields */}
         <form
           id="projectForm"
           onSubmit={handleFormSubmit}
@@ -318,6 +330,12 @@ const Form = ({ onAddProject } = {}) => {
                     Select category...
                   </option>
 
+                  {hasExistingCategory && (
+                    <option value={editingProject.category}>
+                      {editingProject.category}
+                    </option>
+                  )}
+
                   {categories.map((category) => (
                     <option key={category.value} value={category.value}>
                       {category.label}
@@ -388,10 +406,7 @@ const Form = ({ onAddProject } = {}) => {
               />
             </div>
 
-            <ErrorMessage
-              id="errorSubmit"
-              message={errors.submit}
-            />
+            <ErrorMessage id="errorSubmit" message={errors.submit} />
 
             {/* Buttons */}
             <div className="pt-3 flex items-center gap-2.5">
@@ -400,33 +415,22 @@ const Form = ({ onAddProject } = {}) => {
                 disabled={isSubmitting}
                 className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 sm:py-2.5 text-xs font-semibold rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 shadow-sm active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2.5"
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-
                 <span>
-                  {isSubmitting ? "Adding..." : "Add Project"}
+                  {isSubmitting
+                    ? "Saving..."
+                    : isEditing
+                      ? "Save Changes"
+                      : "Add Project"}
                 </span>
               </button>
 
               <button
                 type="button"
-                onClick={clearForm}
+                onClick={isEditing ? onCancelEdit : clearForm}
                 disabled={isSubmitting}
                 className="px-3.5 py-2 sm:py-2.5 text-xs font-medium rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Clear
+                {isEditing ? "Cancel" : "Clear"}
               </button>
             </div>
           </fieldset>

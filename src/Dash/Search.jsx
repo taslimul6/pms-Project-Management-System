@@ -1,17 +1,28 @@
-import { useState } from "react";
-
-const Search = ({ onSearch }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-
+const Search = ({
+  onSearch,
+  displayedCount,
+  totalCount,
+  inputValue,
+  setInputValue,
+}) => {
   const handleSrc = (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
-      onSearch(searchTerm);
+      onSearch(inputValue.trim());
+    }
+  };
+
+  const handleChange = (event) => {
+    const value = event.target.value;
+    setInputValue(value);
+
+    if (value.trim() === "") {
+      onSearch("");
     }
   };
 
   const handleClear = () => {
-    setSearchTerm("");
+    setInputValue("");
     onSearch("");
   };
 
@@ -29,7 +40,7 @@ const Search = ({ onSearch }) => {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 0114 0z"
             />
           </svg>
         </span>
@@ -38,14 +49,14 @@ const Search = ({ onSearch }) => {
           type="text"
           id="searchProjects"
           aria-label="Search projects"
-          placeholder="Search by project name or domain..."
+          placeholder="Type a project name and press Enter..."
           className="w-full pl-9 pr-8 py-2 text-xs bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-400/20 transition-all"
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
+          value={inputValue}
+          onChange={handleChange}
           onKeyDown={handleSrc}
         />
 
-        {searchTerm && (
+        {inputValue && (
           <button
             type="button"
             id="clearSearchBtn"
@@ -77,7 +88,7 @@ const Search = ({ onSearch }) => {
           id="displayedCount"
           className="text-xs font-bold font-mono-code px-2.5 py-1 bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-lg"
         >
-          4 of 4
+          {displayedCount} of {totalCount}
         </span>
       </div>
     </div>
