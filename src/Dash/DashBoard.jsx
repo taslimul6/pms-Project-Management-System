@@ -204,7 +204,7 @@ const DashBoard = () => {
               />
             ))
           ) : (
-            <EmptyCard />
+           <EmptyCard onReset={handleReset} />
           )}
         </section>
       </div>
