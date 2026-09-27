@@ -1,4 +1,7 @@
 import { useState } from "react";
+import PropTypes from "prop-types";
+import FormField, { ErrorMessage } from "./FormField";
+import { categories, validateProject } from "./validateProject";
 
 const initialValues = {
   projectName: "",
@@ -12,33 +15,8 @@ const initialValues = {
   totalBudget: "",
 };
 
-const categories = [
-  { value: "Web Development", label: "Web Development" },
-  { value: "Mobile App", label: "Mobile App" },
-  { value: "UI/UX Design", label: "UI/UX Design" },
-  { value: "Cloud / DevOps", label: "Cloud / DevOps" },
-  { value: "AI & ML", label: "AI & Machine Learning" },
-  { value: "Branding & Growth", label: "Branding & Growth" },
-];
-
 const inputClass =
   "w-full px-3 py-2 sm:py-2.5 text-xs bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-400/20 transition-all";
-
-const labelClass = "block text-xs font-medium text-zinc-300 mb-1";
-
-const ErrorMessage = ({ id, message }) => {
-  if (!message) return null;
-
-  return (
-    <p
-      id={id}
-      role="alert"
-      className="text-[11px] text-rose-400 mt-1"
-    >
-      {message}
-    </p>
-  );
-};
 
 const Form = ({
   editingProject,
@@ -56,7 +34,6 @@ const Form = ({
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-
   const hasExistingCategory =
     editingProject?.category &&
     !categories.some((item) => item.value === editingProject.category);
@@ -64,16 +41,8 @@ const Form = ({
   const handleChange = (event) => {
     const { name, value } = event.target;
 
-    setValues((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
-
-    setErrors((previous) => ({
-      ...previous,
-      [name]: "",
-      submit: "",
-    }));
+    setValues((previous) => ({ ...previous, [name]: value }));
+    setErrors((previous) => ({ ...previous, [name]: "", submit: "" }));
   };
 
   const clearForm = () => {
@@ -86,91 +55,50 @@ const Form = ({
 
     if (isSubmitting) return;
 
-    const projectName = values.projectName.trim();
-    const clientName = values.clientName.trim();
-    const projectUrl = values.projectUrl.trim();
-    const budget = Number(values.budget);
-    const qty = Number(values.qty);
-    const totalBudget = budget * qty;
-
-    const newErrors = {};
-
-    if (!projectName) {
-      newErrors.projectName = "Project name is required.";
-    }
-
-    if (!clientName) {
-      newErrors.clientName = "Client name is required.";
-    }
-
-    try {
-      const url = new URL(projectUrl);
-
-      if (!["http:", "https:"].includes(url.protocol)) {
-        newErrors.projectUrl = "Please enter an HTTP or HTTPS URL.";
-      }
-    } catch {
-      newErrors.projectUrl = "Please enter a valid URL.";
-    }
-
-    const validCategory =
-      categories.some((item) => item.value === values.category) ||
-      (isEditing &&
-        values.category &&
-        values.category === editingProject.category);
-
-    if (!validCategory) {
-      newErrors.category = "Please select a category.";
-    }
-
-    if (
-      !String(values.budget).trim() ||
-      !Number.isFinite(budget) ||
-      budget <= 0
-    ) {
-      newErrors.budget = "Budget must be a positive number.";
-    }
-
-    if (!Number.isSafeInteger(qty) || qty < 1) {
-      newErrors.submit = "Quantity must be a positive whole number.";
-    } else if (!newErrors.budget && !Number.isFinite(totalBudget)) {
-      newErrors.budget = "Total budget is too large.";
-    }
-
+    const newErrors = validateProject(values, editingProject);
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) return;
+
+    const budget = Number(values.budget);
+    const qty = Number(values.qty);
 
     setIsSubmitting(true);
 
     try {
       const projectData = {
         ...values,
-        projectName,
-        clientName,
-        projectUrl,
+        projectName: values.projectName.trim(),
+        clientName: values.clientName.trim(),
+        projectUrl: values.projectUrl.trim(),
         budget,
         qty,
-        totalBudget,
+        totalBudget: budget * qty,
       };
 
       if (isEditing) {
-        await onUpdateProject({
-          ...projectData,
-          id: editingProject.id,
-        });
+        await onUpdateProject({ ...projectData, id: editingProject.id });
       } else {
         await onAddProject(projectData);
         clearForm();
       }
     } catch {
-      setErrors({
-        submit: "Could not save the project. Please try again.",
-      });
+      setErrors({ submit: "Could not save the project. Please try again." });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Shared props for the text-like inputs.
+  const fieldProps = (name) => ({
+    id: name,
+    name,
+    value: values[name],
+    onChange: handleChange,
+    "aria-invalid": Boolean(errors[name]),
+    "aria-describedby": errors[name] ? `error-${name}` : undefined,
+    required: true,
+  });
 
   return (
     <aside className="lg:col-span-4 w-full lg:sticky lg:top-20 self-start">
@@ -193,10 +121,7 @@ const Form = ({
               </h3>
             </div>
 
-            <p
-              id="formSubtitle"
-              className="text-xs text-zinc-400 mt-0.5"
-            >
+            <p id="formSubtitle" className="text-xs text-zinc-400 mt-0.5">
               {isEditing
                 ? "Update the selected project details"
                 : "Enter details to add a new project"}
@@ -226,105 +151,50 @@ const Form = ({
             disabled={isSubmitting}
             className="min-w-0 space-y-3.5 sm:space-y-4"
           >
-            {/* Project Name */}
-            <div>
-              <label htmlFor="projectName" className={labelClass}>
-                Project Name <span className="text-rose-400">*</span>
-              </label>
-
+            <FormField
+              id="projectName"
+              label="Project Name"
+              error={errors.projectName}
+            >
               <input
                 type="text"
-                id="projectName"
-                name="projectName"
-                value={values.projectName}
-                onChange={handleChange}
                 placeholder="e.g. NextGen SaaS Dashboard"
                 className={inputClass}
-                aria-invalid={Boolean(errors.projectName)}
-                aria-describedby={
-                  errors.projectName ? "errorProjectName" : undefined
-                }
-                required
+                {...fieldProps("projectName")}
               />
+            </FormField>
 
-              <ErrorMessage
-                id="errorProjectName"
-                message={errors.projectName}
-              />
-            </div>
-
-            {/* Client Name */}
-            <div>
-              <label htmlFor="clientName" className={labelClass}>
-                Client Name <span className="text-rose-400">*</span>
-              </label>
-
+            <FormField
+              id="clientName"
+              label="Client Name"
+              error={errors.clientName}
+            >
               <input
                 type="text"
-                id="clientName"
-                name="clientName"
-                value={values.clientName}
-                onChange={handleChange}
                 placeholder="e.g. Acme Global Tech"
                 className={inputClass}
-                aria-invalid={Boolean(errors.clientName)}
-                aria-describedby={
-                  errors.clientName ? "errorClientName" : undefined
-                }
-                required
+                {...fieldProps("clientName")}
               />
+            </FormField>
 
-              <ErrorMessage
-                id="errorClientName"
-                message={errors.clientName}
-              />
-            </div>
-
-            {/* Project URL */}
-            <div>
-              <label htmlFor="projectUrl" className={labelClass}>
-                Project URL <span className="text-rose-400">*</span>
-              </label>
-
+            <FormField
+              id="projectUrl"
+              label="Project URL"
+              error={errors.projectUrl}
+            >
               <input
                 type="url"
-                id="projectUrl"
-                name="projectUrl"
-                value={values.projectUrl}
-                onChange={handleChange}
                 placeholder="https://client-project.com"
                 className={`${inputClass} font-mono-code`}
-                aria-invalid={Boolean(errors.projectUrl)}
-                aria-describedby={
-                  errors.projectUrl ? "errorProjectUrl" : undefined
-                }
-                required
+                {...fieldProps("projectUrl")}
               />
+            </FormField>
 
-              <ErrorMessage
-                id="errorProjectUrl"
-                message={errors.projectUrl}
-              />
-            </div>
-
-            {/* Category */}
-            <div>
-              <label htmlFor="category" className={labelClass}>
-                Category <span className="text-rose-400">*</span>
-              </label>
-
+            <FormField id="category" label="Category" error={errors.category}>
               <div className="relative">
                 <select
-                  id="category"
-                  name="category"
-                  value={values.category}
-                  onChange={handleChange}
                   className={`${inputClass} pr-10 appearance-none cursor-pointer`}
-                  aria-invalid={Boolean(errors.category)}
-                  aria-describedby={
-                    errors.category ? "errorCategory" : undefined
-                  }
-                  required
+                  {...fieldProps("category")}
                 >
                   <option value="" disabled>
                     Select category...
@@ -360,20 +230,13 @@ const Form = ({
                   </svg>
                 </div>
               </div>
+            </FormField>
 
-              <ErrorMessage
-                id="errorCategory"
-                message={errors.category}
-              />
-            </div>
-
-            {/* Budget */}
-            <div>
-              <label htmlFor="budget" className={labelClass}>
-                Unit Budget ($ USD){" "}
-                <span className="text-rose-400">*</span>
-              </label>
-
+            <FormField
+              id="budget"
+              label="Unit Budget ($ USD)"
+              error={errors.budget}
+            >
               <div className="relative">
                 <span
                   aria-hidden="true"
@@ -384,27 +247,14 @@ const Form = ({
 
                 <input
                   type="number"
-                  id="budget"
-                  name="budget"
-                  value={values.budget}
-                  onChange={handleChange}
                   min="0"
                   step="any"
                   placeholder="5000"
                   className={`${inputClass} pl-7 font-mono-code`}
-                  aria-invalid={Boolean(errors.budget)}
-                  aria-describedby={
-                    errors.budget ? "errorBudget" : undefined
-                  }
-                  required
+                  {...fieldProps("budget")}
                 />
               </div>
-
-              <ErrorMessage
-                id="errorBudget"
-                message={errors.budget}
-              />
-            </div>
+            </FormField>
 
             <ErrorMessage id="errorSubmit" message={errors.submit} />
 
@@ -438,6 +288,13 @@ const Form = ({
       </div>
     </aside>
   );
+};
+
+Form.propTypes = {
+  editingProject: PropTypes.object,
+  onAddProject: PropTypes.func.isRequired,
+  onUpdateProject: PropTypes.func.isRequired,
+  onCancelEdit: PropTypes.func.isRequired,
 };
 
 export default Form;
