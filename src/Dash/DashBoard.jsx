@@ -1,26 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import EmptyCard from "./EmptyCard";
 import Filter from "./Filter";
 import Form from "./Form";
 import Projects from "./Projects";
 import Search from "./Search";
 import Stats from "./Stats";
+import Toast from "./Toast";
+import { filterProjects } from "./filterProjects";
+import { loadProjects, saveProjects } from "./projectsData";
 
-const DashBoard = () => {
-  const [projects, setProjects] = useState([
-    {
-      id: 1,
-      projectName: "hablu Mamar bari ",
-      clientName: "Hablu",
-      projectUrl: "https://bablu.com",
-      category: "Bari design",
-      budget: "500",
-      isFav: false,
-      isCompleted: false,
-      qty: 1,
-      totalBudget: "500",
-    },
-  ]);
+const Dashboard = () => {
+  const [projects, setProjects] = useState(loadProjects);
   const [editingProject, setEditingProject] = useState(null);
   const [inputValue, setInputValue] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,6 +18,16 @@ const DashBoard = () => {
   const [status, setStatus] = useState("ALL");
   const [sort, setSort] = useState("default");
   const [star, setStar] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  // Keep projects in localStorage so they survive a refresh.
+  useEffect(() => {
+    saveProjects(projects);
+  }, [projects]);
+
+  const showToast = (message) => {
+    setToast({ id: Date.now(), message });
+  };
 
   const handleAddProject = (newProject) => {
     const project = {
@@ -36,9 +36,10 @@ const DashBoard = () => {
     };
 
     setProjects((previous) => [...previous, project]);
+    showToast("Project added");
   };
 
-  const handleFev = (pro) => {
+  const handleFavorite = (pro) => {
     setProjects((previous) =>
       previous.map((p) => (p.id === pro.id ? { ...p, isFav: !p.isFav } : p)),
     );
@@ -57,32 +58,13 @@ const DashBoard = () => {
     setSort("default");
   };
 
-  const filteredProjects = projects.filter((project) => {
-    const matchesSearch = project.projectName
-      .toLowerCase()
-      .includes(searchTerm.trim().toLowerCase());
-
-    const matchesCategory = category === "ALL" || project.category === category;
-
-    const matchesStatus =
-      status === "ALL" ||
-      (status === "Pending" && project.isCompleted === false) ||
-      (status === "Completed" && project.isCompleted === true);
-
-    const matchesStar = !star || project.isFav === true;
-
-    return matchesSearch && matchesCategory && matchesStatus && matchesStar;
+  const filteredProjects = filterProjects(projects, {
+    searchTerm,
+    category,
+    status,
+    star,
+    sort,
   });
-
-  if (sort === "name-asc") {
-    filteredProjects.sort((a, b) => a.projectName.localeCompare(b.projectName));
-  } else if (sort === "name-desc") {
-    filteredProjects.sort((a, b) => b.projectName.localeCompare(a.projectName));
-  } else if (sort === "budget-asc") {
-    filteredProjects.sort((a, b) => Number(a.budget) - Number(b.budget));
-  } else if (sort === "budget-desc") {
-    filteredProjects.sort((a, b) => Number(b.budget) - Number(a.budget));
-  }
 
   // Project handling logic
 
@@ -112,6 +94,7 @@ const DashBoard = () => {
     );
 
     setEditingProject(null);
+    showToast("Project updated");
   };
 
   const handleQuantity = (selectedProject, change) => {
@@ -146,6 +129,8 @@ const DashBoard = () => {
   };
 
   const handleDelete = (pro) => {
+    if (!window.confirm(`Delete "${pro.projectName}"?`)) return;
+
     setProjects((previous) =>
       previous.filter((project) => project.id !== pro.id),
     );
@@ -153,6 +138,8 @@ const DashBoard = () => {
     if (editingProject?.id === pro.id) {
       setEditingProject(null);
     }
+
+    showToast("Project deleted");
   };
 
   return (
@@ -196,7 +183,7 @@ const DashBoard = () => {
               <Projects
                 key={project.id}
                 project={project}
-                handleFev={handleFev}
+                handleFavorite={handleFavorite}
                 handleDelete={handleDelete}
                 handleEdit={handleEdit}
                 handleQuantity={handleQuantity}
@@ -204,12 +191,20 @@ const DashBoard = () => {
               />
             ))
           ) : (
-           <EmptyCard onReset={handleReset} />
+            <EmptyCard onReset={handleReset} />
           )}
         </section>
       </div>
+
+      {toast && (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
     </>
   );
 };
 
-export default DashBoard;
+export default Dashboard;

@@ -1,27 +1,18 @@
-
 import './App.css'
-import DashBoard from './Dash/DashBoard'
+import Dashboard from './Dash/Dashboard'
 import Footer from './Footer'
 import Nav from './Nav'
 
-
 function App() {
- 
-
   return (
     <>
+      <Nav />
 
-    
-     <Nav />
-     
-     <main  className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
+        <Dashboard />
+      </main>
 
-      <DashBoard />
-
-
-     </main>
-
-     <Footer />
+      <Footer />
     </>
   )
 }

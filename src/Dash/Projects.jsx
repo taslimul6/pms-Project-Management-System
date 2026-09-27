@@ -1,6 +1,9 @@
+import PropTypes from "prop-types";
+import { formatCurrency } from "./formatCurrency";
+
 const Projects = ({
   project,
-  handleFev,
+  handleFavorite,
   handleDelete,
   handleEdit,
   handleQuantity,
@@ -42,7 +45,7 @@ const Projects = ({
           {/* Favourite */}
           <button
             type="button"
-            onClick={() => handleFev(project)}
+            onClick={() => handleFavorite(project)}
             className="p-1.5 rounded-lg text-amber-400 hover:bg-zinc-800 transition-colors cursor-pointer"
             title="Favorite"
             aria-label="Toggle favorite"
@@ -185,11 +188,11 @@ const Projects = ({
 
         <div className="text-right">
           <div className="text-[10px] text-zinc-500 font-mono-code">
-            Unit: ${project.budget} × {project.qty}
+            Unit: {formatCurrency(project.budget)} × {project.qty}
           </div>
 
           <div className="text-xs sm:text-sm font-bold text-emerald-400 font-mono-code">
-            ${project.budget * project.qty}
+            {formatCurrency(project.budget * project.qty)}
           </div>
         </div>
 
@@ -220,6 +223,15 @@ const Projects = ({
       </div>
     </article>
   );
+};
+
+Projects.propTypes = {
+  project: PropTypes.object,
+  handleFavorite: PropTypes.func.isRequired,
+  handleDelete: PropTypes.func.isRequired,
+  handleEdit: PropTypes.func.isRequired,
+  handleQuantity: PropTypes.func.isRequired,
+  handleStatus: PropTypes.func.isRequired,
 };
 
 export default Projects;
