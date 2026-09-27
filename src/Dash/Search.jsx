@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+import PropTypes from "prop-types";
+
 const Search = ({
   onSearch,
   displayedCount,
@@ -12,13 +15,14 @@ const Search = ({
     }
   };
 
-  const handleChange = (event) => {
-    const value = event.target.value;
-    setInputValue(value);
+  // Live search: apply the typed text 300ms after the user stops typing.
+  useEffect(() => {
+    const timer = setTimeout(() => onSearch(inputValue.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [inputValue, onSearch]);
 
-    if (value.trim() === "") {
-      onSearch("");
-    }
+  const handleChange = (event) => {
+    setInputValue(event.target.value);
   };
 
   const handleClear = () => {
@@ -49,7 +53,7 @@ const Search = ({
           type="text"
           id="searchProjects"
           aria-label="Search projects"
-          placeholder="Type a project name and press Enter..."
+          placeholder="Search projects by name..."
           className="w-full pl-9 pr-8 py-2 text-xs bg-zinc-950 border border-zinc-800 rounded-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-400/20 transition-all"
           value={inputValue}
           onChange={handleChange}
@@ -93,6 +97,14 @@ const Search = ({
       </div>
     </div>
   );
+};
+
+Search.propTypes = {
+  onSearch: PropTypes.func.isRequired,
+  displayedCount: PropTypes.number.isRequired,
+  totalCount: PropTypes.number.isRequired,
+  inputValue: PropTypes.string.isRequired,
+  setInputValue: PropTypes.func.isRequired,
 };
 
 export default Search;
