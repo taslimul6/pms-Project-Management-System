@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import EmptyStat from "../assets/empty-state.svg";
 
 const EmptyCard = ({ onReset }) => {
@@ -34,6 +35,10 @@ const EmptyCard = ({ onReset }) => {
       </div>
     </div>
   );
+};
+
+EmptyCard.propTypes = {
+  onReset: PropTypes.func.isRequired,
 };
 
 export default EmptyCard;

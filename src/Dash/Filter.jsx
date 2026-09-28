@@ -1,3 +1,5 @@
+import PropTypes from "prop-types";
+
 const Filter = ({
   category,
   setCategory,
@@ -23,13 +25,6 @@ const Filter = ({
 
   const handleSort = (e) => {
     setSort(e.target.value);
-  };
-
-  const handleReset = () => {
-    setCategory("ALL");
-    setStatus("ALL");
-    setStar(false);
-    setSort("default");
   };
 
   return (
@@ -202,6 +197,18 @@ const Filter = ({
       </div>
     </div>
   );
+};
+
+Filter.propTypes = {
+  category: PropTypes.string.isRequired,
+  setCategory: PropTypes.func.isRequired,
+  status: PropTypes.string.isRequired,
+  setStatus: PropTypes.func.isRequired,
+  star: PropTypes.bool.isRequired,
+  setStar: PropTypes.func.isRequired,
+  sort: PropTypes.string.isRequired,
+  setSort: PropTypes.func.isRequired,
+  onReset: PropTypes.func.isRequired,
 };
 
 export default Filter;
