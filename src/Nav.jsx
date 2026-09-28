@@ -12,19 +12,17 @@ const Nav = () => {
           <a href="index.html" className="flex items-center gap-3 group shrink-0">
             <img
               src={Logo}
-              alt="Project Hub"
+              alt="PMS"
               className="w-8 h-8 sm:w-9 sm:h-9 transition-transform group-hover:scale-105"
             />
             <div className="flex items-center gap-2">
               <span
                 className="text-base sm:text-lg font-bold tracking-tight text-white"
-                >Project<span className="text-blue-500 font-extrabold"
-                  >Hub</span
-                ></span
+                >PMS</span
               >
               <span
                 className="hidden sm:inline-block text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700"
-                >Studio</span
+                >Project Management System</span
               >
             </div>
           </a>

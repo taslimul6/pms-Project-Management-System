@@ -13,12 +13,12 @@ const Footer = () => {
         <div className="flex items-center gap-2">
           <img
             src={Logo}
-            alt="Project Hub"
+            alt="PMS"
             className="w-4 h-4 opacity-70"
           />
-          <span className="font-medium text-zinc-400">Batch 5 — Project Hub</span>
+          <span className="font-medium text-zinc-400">PMS — Project Management System</span>
         </div>
-        <p>Copyright ©2026 Learn with Sumit • All rights reserved.</p>
+        <p>Copyright ©2026 Taslimul Hasan • All rights reserved.</p>
       </div>
     </footer>
         
